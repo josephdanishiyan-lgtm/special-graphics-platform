@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  /* This connects to the --font-poppins variable in your layout.tsx */
+  --font-sans: var(--font-poppins);
+}
+
+body {
+  font-family: var(--font-poppins), sans-serif;
+  background-color: #ffffff;
+  color: #171717;
+}
