@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Added for Security
 import { Poppins } from 'next/font/google'; 
-import { Check, ArrowRight, ChevronLeft, ChevronRight, Plus, Minus, Search } from 'lucide-react';
+import { Check, ArrowRight, ChevronLeft, ChevronRight, Plus, Minus, Search, Loader2 } from 'lucide-react';
 
 // --- TYPES ---
-interface WorkItem { id: number; title: string; color: string; image: string; }
+interface WorkItem { id: number; title: string; color: string; image: string; category?: string; }
 interface ClientLogo { name: string; image: string; }
 interface FaqItem { q: string; a: string; }
 interface FaqData { [key: string]: FaqItem[]; }
@@ -17,17 +18,80 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
-// --- DATA ---
-const heroSlides: string[] = ['/images/studio-hero-1.jpg', '/images/studio-hero-2.jpg', '/images/studio-hero-3.jpg', '/images/studio-hero-4.jpg', '/images/studio-hero-5.jpg'];
-const clientLogos: ClientLogo[] = [{ name: "Van Balen", image: "" }, { name: "Image Wash", image: "" }, { name: "Coca Cola", image: "" }, { name: "Ethique", image: "" }, { name: "Ali & Shay", image: "" }];
-const works: WorkItem[] = [{ id: 1, title: 'Pink Brand', color: 'bg-pink-600', image: '' }, { id: 2, title: 'Orange Box', color: 'bg-orange-500', image: '' }, { id: 3, title: 'Beige Tag', color: 'bg-[#D2B48C]', image: '' }, { id: 4, title: 'Green Pattern', color: 'bg-emerald-800', image: '' }, { id: 5, title: 'Red Festive', color: 'bg-red-600', image: '' }, { id: 6, title: 'Dark Neon', color: 'bg-slate-900', image: '' }, { id: 7, title: 'Blue Abstract', color: 'bg-blue-900', image: '' }, { id: 8, title: 'Night Lights', color: 'bg-black', image: '' }];
-const allFaqs: FaqData = { studio: [{ q: "What is the difference between Special Studio and the design contest?", a: "Special Studio is a premium agency service..." }, { q: "How much does it cost?", a: "Packages start from specific rates..." }, { q: "How do I get started?", a: "Click the start button to begin..." }, { q: "Do you offer brand workshops?", a: "Yes, we facilitate workshops..." }], general: [{ q: "What methods of payment do you accept?", a: "Visa, Mastercard, Paypal..." }, { q: "Do you have a money back guarantee?", a: "Yes, specifically for contests..." }, { q: "Who are the Creative Directors?", a: "Senior designers with 10+ years exp..." }, { q: "Who are the Project Managers?", a: "Your dedicated point of contact..." }] };
+// --- STATIC DATA ---
+// UPDATED: Proper Image paths
+const heroSlides: string[] = [
+    '/images/studio/hero-1.jpg', 
+    '/images/studio/hero-2.jpg', 
+    '/images/studio/hero-3.jpg', 
+    '/images/studio/hero-4.jpg', 
+    '/images/studio/hero-5.jpg'
+];
+
+// UPDATED: Proper Image paths for logos
+const clientLogos: ClientLogo[] = [
+    { name: "Van Balen", image: "/images/studio/client-van-balen.jpg" }, 
+    { name: "Image Wash", image: "/images/studio/client-image-wash.jpg" }, 
+    { name: "Coca Cola", image: "/images/studio/client-coca-cola.jpg" }, 
+    { name: "Ethique", image: "/images/studio/client-ethique.jpg" }, 
+    { name: "Ali & Shay", image: "/images/studio/client-ali-shay.jpg" }
+];
+
+const allFaqs: FaqData = { 
+    studio: [
+        { q: "What is the difference between Special Studio and the design contest?", a: "Special Studio is a premium agency service..." }, 
+        { q: "How much does it cost?", a: "Packages start from specific rates..." }, 
+        { q: "How do I get started?", a: "Click the start button to begin..." }, 
+        { q: "Do you offer brand workshops?", a: "Yes, we facilitate workshops..." }
+    ], 
+    general: [
+        { q: "What methods of payment do you accept?", a: "Visa, Mastercard, Paypal..." }, 
+        { q: "Do you have a money back guarantee?", a: "Yes, specifically for contests..." }, 
+        { q: "Who are the Creative Directors?", a: "Senior designers with 10+ years exp..." }, 
+        { q: "Who are the Project Managers?", a: "Your dedicated point of contact..." }
+    ] 
+};
 
 export default function SpecialStudioPage() {
+  const router = useRouter(); // For Security Redirect
   const [currentSlide, setCurrentSlide] = useState<number>(0);
   const [activeFaqTab, setActiveFaqTab] = useState<string>('studio'); 
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>(""); 
+  
+  // --- DYNAMIC STATE ---
+  const [works, setWorks] = useState<WorkItem[]>([]);
+  const [loadingWorks, setLoadingWorks] = useState(true);
+
+  // --- 1. SECURITY CHECK ---
+  useEffect(() => {
+    const role = localStorage.getItem('userRole');
+    if (!role) {
+      router.push('/login');
+    }
+  }, [router]);
+
+  // --- 2. API FETCH ---
+  useEffect(() => {
+    async function fetchStudioWorks() {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${apiUrl}/api/special-studio`);
+            
+            if (res.ok) {
+                const data = await res.json();
+                setWorks(data);
+            } else {
+                console.error("Failed to fetch works");
+            }
+        } catch (err) {
+            console.error("Error connecting to backend", err);
+        } finally {
+            setLoadingWorks(false);
+        }
+    }
+    fetchStudioWorks();
+  }, []);
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1));
@@ -62,7 +126,8 @@ export default function SpecialStudioPage() {
                  <div className="w-full h-full relative overflow-hidden bg-gray-200">
                      {heroSlides.map((src, index) => (
                          <div key={index} className={`absolute inset-0 transition-opacity duration-700 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100 text-lg">[Hero Image {index + 1}]</div>
+                             {/* UPDATED: Now uses actual <img> tag for hero slides */}
+                             <img src={src} alt={`Hero ${index}`} className="w-full h-full object-cover" />
                          </div>
                      ))}
                      <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md transition-all z-10"><ChevronLeft className="w-6 h-6 text-black" /></button>
@@ -153,7 +218,12 @@ export default function SpecialStudioPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-24 items-start">
               {clientLogos.map((client, index) => (
                   <div key={index} className={`flex items-center justify-center ${index % 2 === 0 ? 'mt-0' : 'mt-12'}`}>
-                      <div className="h-16 w-32 bg-gray-100 border border-gray-200 flex items-center justify-center text-xs text-gray-400 font-bold">{client.name}</div>
+                      {/* UPDATED: Uses Image Tag now */}
+                      {client.image ? (
+                          <img src={client.image} alt={client.name} className="h-16 w-32 object-contain grayscale hover:grayscale-0 transition-all opacity-70 hover:opacity-100" />
+                      ) : (
+                          <div className="h-16 w-32 bg-gray-100 border border-gray-200 flex items-center justify-center text-xs text-gray-400 font-bold">{client.name}</div>
+                      )}
                   </div>
               ))}
           </div>
@@ -164,17 +234,33 @@ export default function SpecialStudioPage() {
           </div>
       </section>
 
-      {/* SECTION 6: WORKS */}
+      {/* SECTION 6: WORKS (DYNAMIC) */}
       <section className="py-20 px-6 md:px-12 max-w-[1400px] mx-auto">
           <h2 className="font-heading text-4xl font-bold text-center mb-16">Our Works</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {works.map((work) => (
-                  <div key={work.id} className={`aspect-square ${work.color} relative group overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-shadow`}>
-                      <div className="absolute inset-0 flex items-center justify-center text-white/40 text-sm font-bold p-4 text-center">[{work.title}]</div>
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-                  </div>
-              ))}
-          </div>
+          
+          {loadingWorks ? (
+               <div className="flex justify-center py-10">
+                   <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+               </div>
+          ) : works.length > 0 ? (
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                   {works.map((work) => (
+                       <div key={work.id} className={`aspect-square ${work.color} relative group overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-shadow`}>
+                           {/* UPDATED: If image exists, show it. Else show label */}
+                           {work.image ? (
+                               <img src={work.image} alt={work.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                           ) : (
+                               <div className="absolute inset-0 flex items-center justify-center text-white/40 text-sm font-bold p-4 text-center">[{work.title}]</div>
+                           )}
+                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                       </div>
+                   ))}
+               </div>
+          ) : (
+               <div className="text-center py-10 text-gray-400">
+                   No works found. (Did you run the seed script?)
+               </div>
+          )}
       </section>
 
       {/* SECTION 7: FAQ */}

@@ -11,7 +11,6 @@ export default function Navbar() {
 
   // Check login status whenever component loads
   useEffect(() => {
-    // This runs on client-side only
     const storedRole = localStorage.getItem('userRole');
     setRole(storedRole);
   }, []);
@@ -30,8 +29,14 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center gap-6 text-sm font-medium text-gray-600">
+        {/* 1. Link to Contest Page */}
         <Link href="/contest" className="hover:text-black transition-colors">Find a Contest</Link>
-        <Link href="/showcase" className="hover:text-black transition-colors">Showcase</Link>
+        
+        {/* 2. Link to Inspiration Page (Fixed path) */}
+        <Link href="/inspiration" className="hover:text-black transition-colors">Inspiration</Link>
+        
+        {/* 3. Link to Studio Page (Added) */}
+        <Link href="/special-studio" className="hover:text-black transition-colors">Studio</Link>
         
         {/* DYNAMIC PART */}
         {role ? (
@@ -40,14 +45,6 @@ export default function Navbar() {
                     <UserCircle className="w-5 h-5" />
                     {role} Mode
                 </span>
-                
-                {role === 'client' && (
-                    <Link href="/client/dashboard">
-                        <button className="bg-black text-white px-4 py-2 rounded-md font-bold text-xs hover:bg-gray-800">
-                            Dashboard
-                        </button>
-                    </Link>
-                )}
                 
                 <button onClick={handleLogout} className="text-red-500 hover:text-red-700" title="Logout">
                     <LogOut className="w-5 h-5" />

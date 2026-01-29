@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Added for Security Redirect
 import { Poppins } from 'next/font/google'; 
 import { Heart, Search, X, ChevronLeft, ChevronRight, ThumbsUp, Maximize2, ZoomIn } from 'lucide-react';
 
@@ -25,6 +26,7 @@ const poppins = Poppins({
 });
 
 export default function InspirationsPage() {
+  const router = useRouter(); // For redirecting
   const [designs, setDesigns] = useState<Design[]>([]);
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -32,7 +34,15 @@ export default function InspirationsPage() {
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true); 
 
-  // --- FETCH DATA FROM BACKEND ---
+  // --- 1. SECURITY CHECK ---
+  useEffect(() => {
+    const role = localStorage.getItem('userRole');
+    if (!role) {
+      router.push('/login');
+    }
+  }, [router]);
+
+  // --- 2. FETCH DATA FROM BACKEND ---
   useEffect(() => {
     const fetchDesigns = async () => {
       try {
@@ -45,8 +55,11 @@ export default function InspirationsPage() {
           title: item.title,
           designer: item.designerName, 
           likes: item.likeCount,       
-          description: "Creative design concept uploaded to Special Graphics.", 
-          tags: ['Design', 'Branding'], 
+          description: item.description || "Creative design concept uploaded to Special Graphics.", 
+          
+          // FIX IS HERE: Check if it's already an array. If not, fallback to default.
+          tags: Array.isArray(item.tags) ? item.tags : ['Design', 'Branding'], 
+          
           tools: item.toolsUsed,
           image: item.imageUrl,        
           isLiked: false               

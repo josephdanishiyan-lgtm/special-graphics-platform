@@ -2,13 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import sequelize from './db';
+
+// Routes
 import contestRoutes from './routes/contestRoutes';
-
-import './models/Design'; 
-// import './models/Contest';
-
-import inspirationRoutes from './routes/inspiration';
-// import contestRoutes from './routes/contest;
+import studioRoutes from './routes/studioRoutes';
+import inspirationRoutes from './routes/inspiration'; // This loads routes/inspiration.ts
 
 dotenv.config();
 
@@ -19,33 +17,34 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Use Routes
-app.use('/api/inspiration', inspirationRoutes);
-// app.use('/api/contest', contestRoutes);
+// 1. Contest Page Routes
 app.use('/api/contests', contestRoutes);
 
-// Basic Test Route
+// 2. Special Studio Page Routes
+app.use('/api/special-studio', studioRoutes);
+
+// 3. Inspiration Page Routes
+app.use('/api/inspiration', inspirationRoutes);
+
+// Basic Health Check
 app.get('/', (req, res) => {
-  res.send('PostgreSQL Backend is running!');
+  res.send('Special Graphics API is Running ✅');
 });
 
-// Function to Start Server and Database
+// Start Server
 const startServer = async () => {
   try {
-    // 1. Check Database Connection
+    // Connect to Database
     await sequelize.authenticate();
-    console.log('✅ Database connected successfully (PostgreSQL)!');
-
-    // 2. Sync Models
-    // Using { alter: true } updates columns without deleting data
-    await sequelize.sync({ alter: true });
-    console.log('✅ Tables created/updated!');
+    console.log('✅ Database connected.');
     
-    // 3. Start the Server
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
+    // Sync models (Safe mode: doesn't delete data)
+    await sequelize.sync(); 
+    console.log('✅ Tables synced.');
 
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
   } catch (error) {
     console.error('❌ Unable to connect to the database:', error);
   }
